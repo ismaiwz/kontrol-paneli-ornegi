@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontrol Paneli | Mekatronik Mühendisliğine Giriş Dersi Sunum Ödevi</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.min.css">
+</head>
+
+<body data-bs-theme="dark">
+    <div class="container-fluid row">
+        <div class="col-0-75 bg-darker vh-100 p-3 text-white">
+            <ul class="nav flex-column">
+                <li class="nav-item sekme">
+                    <a class="nav-link text-white w-100 text-center" href="/"><i
+                            class="bi bi-columns-gap fs-1 text-center"></i></a>
+                </li>
+                <li class="nav-item sekme mt-2">
+                    <a class="nav-link text-white w-100 text-center" href="/sensorler"><i
+                            class="bi bi-activity fs-1 text-center"></i></a>
+                </li>
+
+                <li class="nav-item sekme mt-2">
+                    <a class="nav-link text-white w-100 text-center" href="/ayarlar"><i
+                            class="bi bi-gear fs-1 text-center"></i></a>
+                </li>
+            </ul>
+            <ul style="left: 0; justify-content: center; align-items: center;"
+                class="nav flex-column position-absolute bottom-0 mb-3 text-center ms-0 ps-0">
+                <li class="nav-item text-center">
+                    <p class="nav-link text-white w-100 text-center small">İsmail<br>AYDINLIK</p>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-11-25 bg-dark p-3">
+            <h1>Ayarlar</h1>
+            <p>Sistem ayarlarını buradan yönetebilirsiniz.</p>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-rulers"></i> Ultrasonik Ayar
+                            </h1>
+                            <div id="ultrasonikForm">
+                                <label for="ultrasonikMin">Minimum Değer (cm)</label>
+                                <input type="number" id="ultrasonikMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="ultrasonikMax">Maksimum Değer (cm)</label>
+                                <input type="number" id="ultrasonikMax" placeholder="0" class="form-control mb-2">
+                                <label for="ultrasonikDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="ultrasonikDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('ultrasonik')" class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-thermometer-half"></i> Sıcaklık Ayarı
+                            </h1>
+                            <div id="tempForm">
+                                <label for="tempMin">Minimum Değer (°C)</label>
+                                <input type="number" id="tempMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="tempMax">Maksimum Değer (°C)</label>
+                                <input type="number" id="tempMax" placeholder="0" class="form-control mb-2">
+                                <label for="tempDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="tempDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('temp')" class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-droplet-half"></i> Nem Ayarı
+                            </h1>
+                            <div id="humidityForm">
+                                <label for="humidityMin">Minimum Değer (%)</label>
+                                <input type="number" id="humidityMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="humidityMax">Maksimum Değer (%)</label>
+                                <input type="number" id="humidityMax" placeholder="0" class="form-control mb-2">
+                                <label for="humidityDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="humidityDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('humidity')" class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-brightness-high"></i> Işık Ayarı
+                            </h1>
+                            <div id="lightForm">
+                                <label for="lightMin">Minimum Değer (lux)</label>
+                                <input type="number" id="lightMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="lightMax">Maksimum Değer (lux)</label>
+                                <input type="number" id="lightMax" placeholder="0" class="form-control mb-2">
+                                <label for="lightDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="lightDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('light')" class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-wind"></i> Gaz Ayarı
+                            </h1>
+                            <div id="gasForm">
+                                <label for="gasMin">Minimum Değer (ppm)</label>
+                                <input type="number" id="gasMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="gasMax">Maksimum Değer (ppm)</label>
+                                <input type="number" id="gasMax" placeholder="0" class="form-control mb-2">
+                                <label for="gasDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="gasDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('gas')" class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card p-3 bg-body-tertiary shadow-sm h-100">
+                        <div class="card-body">
+                            <h1 class="card-title fs-3 mb-3">
+                                <i class="bi bi-activity"></i> Titreşim Ayarı
+                            </h1>
+                            <div id="vibrationForm">
+                                <label for="vibrationMin">Minimum Değer</label>
+                                <input type="number" id="vibrationMin" placeholder="0" class="form-control mb-2">
+
+                                <label for="vibrationMax">Maksimum Değer</label>
+                                <input type="number" id="vibrationMax" placeholder="0" class="form-control mb-2">
+                                <label for="vibrationDelay">Gecikme Süresi (ms)</label>
+                                <input type="number" id="vibrationDelay" placeholder="0" class="form-control mb-2">
+                                <button onclick="saveSettings('vibration')"   class="btn btn-primary w-100">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        window.onload = function () {
+            fetch('/getSettingsData', {
+                method: "POST",
+                headers: {
+                    'Accept': "application/json",
+                    'Content-type': 'application/json'
+                }
+            }).then(res => {
+                return res.json();
+            }).then(q => {
+                const settings = q;
+                document.getElementById('ultrasonikMin').value = settings.ultrasonik.min;
+                document.getElementById('ultrasonikMax').value = settings.ultrasonik.max;
+                document.getElementById('ultrasonikDelay').value = settings.ultrasonik.ms;
+                document.getElementById('gasMin').value = settings.gas.min;
+                document.getElementById('gasMax').value = settings.gas.max;
+                document.getElementById('gasDelay').value = settings.gas.ms;
+                document.getElementById('tempMin').value = settings.sicaklik.min;
+                document.getElementById('tempMax').value = settings.sicaklik.max;
+                document.getElementById('tempDelay').value = settings.sicaklik.ms;
+                document.getElementById('humidityMin').value = settings.nem.min;
+                document.getElementById('humidityMax').value = settings.nem.max;
+                document.getElementById('humidityDelay').value = settings.nem.ms;
+                document.getElementById('lightMin').value = settings.isik.min;
+                document.getElementById('lightMax').value = settings.isik.max;
+                document.getElementById('lightDelay').value = settings.isik.ms;
+                document.getElementById('vibrationMin').value = settings.titresim.min;
+                document.getElementById('vibrationMax').value = settings.titresim.max;
+                document.getElementById('vibrationDelay').value = settings.titresim.ms;
+            })
+        }
+
+        function saveSettings(sensor) {
+            const min = document.getElementById(`${sensor}Min`).value;
+            const max = document.getElementById(`${sensor}Max`).value;
+
+            fetch('/saveSettings', {
+                method: "POST",
+                headers: {
+                    'Accept': "application/json",
+                    'Content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sensorType: sensor,
+                    min: min,
+                    max: max,
+                    delay: document.getElementById(`${sensor}Delay`).value
+                })
+            }).then(res => {
+                return res.json();
+            }).then(q => {
+                if (q.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: `${sensor} ayarları başarıyla kaydedildi!`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: `${sensor} ayarları kaydedilemedi!`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaz Sensörü Simülasyonu</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            overflow: hidden;
+        }
+        .box {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            top: 50%;
+            transform: translateY(-50%);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: box-shadow 0.25s ease;
+        }
+        .h-100 {
+            height: 100vh !important;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .gas-cloud {
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(111, 66, 193, 0.35) 0%, rgba(220, 53, 69, 0.12) 55%, transparent 75%);
+            pointer-events: none;
+            animation: gasDrift 3.5s ease-in-out infinite;
+        }
+        @keyframes gasDrift {
+            0%, 100% {
+                transform: scale(0.95) rotate(0deg);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.06) rotate(4deg);
+                opacity: 1;
+            }
+        }
+        .telemetry-panel {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(33, 37, 41, 0.9);
+            border: 1px solid #495057;
+            color: #e0cffc;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            z-index: 2000;
+            min-width: 240px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="telemetry-panel">
+    <div>SOCKET: <span id="ws-status" class="text-danger">BAGLI DEGIL</span></div>
+    <div>GECIKME: <span id="delay-val" class="text-light">100</span> ms</div>
+    <div>YOGUNLUK: <span id="ppm-val">100</span> ppm</div>
+</div>
+
+<div class="container-fluid w-100 p-0 h-100">
+    <div class="row p-0 m-0 h-100">
+        <div class="col-2 ms-0 ps-0">
+            <div class="box bg-secondary text-white fw-bold" id="sensor">
+                <span>gaz sensoru</span>
+            </div>
+        </div>
+        <div class="col-10">
+            <div class="box draggable cursor-pointer text-white fw-bold" style="background-color: #6f42c1;">
+                <div class="gas-cloud"></div>
+                <span>gaz bulutu</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.8.4/socket.io.min.js"></script>
+<script>
+    const draggable = document.querySelector('.draggable');
+    const sensor = document.getElementById('sensor');
+    const wsStatusEl = document.getElementById('ws-status');
+    const delayValEl = document.getElementById('delay-val');
+    const ppmValEl = document.getElementById('ppm-val');
+
+    const socket = io();
+    let gecikmeMs = 100; // default gecikme süresi
+    let ustLimit = 1000; // default ust limit
+    let timer = null;
+
+    async function ayarlariGetir() {
+        try {
+            const res = await fetch('/getSettingsData', { method: 'POST' });
+            const data = await res.json();
+            const gazAyar = data && (data.gaz || data.gas);
+            if (gazAyar) {
+                if (gazAyar.max > 0) ustLimit = Math.max(1000, Number(gazAyar.max) * 1.3);
+                const yeniMs = Number(gazAyar.ms);
+                if (yeniMs > 0 && yeniMs !== gecikmeMs) {
+                    gecikmeMs = yeniMs;
+                    delayValEl.textContent = gecikmeMs;
+                    clearInterval(timer);
+                    timer = setInterval(gazOlc, gecikmeMs);
+                }
+            }
+        } catch (e) {}
+    }
+
+    socket.on('connect', () => {
+        wsStatusEl.textContent = 'BAGLANDI';
+        wsStatusEl.className = 'text-success';
+    });
+
+    socket.on('disconnect', () => {
+        wsStatusEl.textContent = 'KOPTU';
+        wsStatusEl.className = 'text-danger';
+    });
+
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    draggable.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        const rect = draggable.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        draggable.style.position = 'absolute';
+        draggable.style.left = rect.left + 'px';
+        draggable.style.top = rect.top + 'px';
+        draggable.style.transform = 'none';
+        draggable.style.zIndex = '1000';
+        draggable.setPointerCapture(e.pointerId);
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const rect = draggable.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+        draggable.style.left = Math.min(Math.max(0, e.clientX - offsetX), maxLeft) + 'px';
+        draggable.style.top = Math.min(Math.max(0, e.clientY - offsetY), maxTop) + 'px';
+    });
+
+    document.addEventListener('pointerup', () => isDragging = false);
+    document.addEventListener('pointercancel', () => isDragging = false);
+
+    const temizHavaPpm = 100; // ayarlanabilir temiz hava ppm degeri
+    let mevcutPpm = temizHavaPpm;
+    let sonZaman = performance.now();
+    // bu sefer de gaz sensoru ile gaz bulutu arasındaki mesafeye göre ppm değerini hesaplayacağız
+    function gazOlc() {
+        const simdi = performance.now();
+        const dt = Math.min(1.0, Math.max(0.001, (simdi - sonZaman) / 1000));
+        sonZaman = simdi;
+
+        const sRect = sensor.getBoundingClientRect();
+        const gRect = draggable.getBoundingClientRect();
+
+        const dx = (gRect.left + gRect.width / 2) - (sRect.left + sRect.width / 2);
+        const dy = (gRect.top + gRect.height / 2) - (sRect.top + sRect.height / 2);
+        const mesafe = Math.hypot(dx, dy);
+
+        const efektifMesafe = Math.max(0, mesafe - 50);
+        const etki = 1 / (1 + Math.pow(efektifMesafe / 150, 2));
+        const hedefPpm = temizHavaPpm + (etki * (ustLimit - temizHavaPpm));
+        /*
+        simulasyon daha gerçekçi olsun diye gaz yoğunluğu artışı hızlı, azalışı yavaş tespit ediliyor.
+        */
+        const tau = hedefPpm > mevcutPpm ? 0.85 : 2.4;
+        const alpha = 1 - Math.exp(-dt / tau); 
+        mevcutPpm += (hedefPpm - mevcutPpm) * alpha;
+
+        const netPpm = Math.max(0, Math.round(mevcutPpm + (Math.random() - 0.5) * 6));
+        ppmValEl.textContent = netPpm;
+
+        const gazOrani = Math.min(1, Math.max(0, (mevcutPpm - temizHavaPpm) / (ustLimit - temizHavaPpm)));
+        sensor.style.boxShadow = gazOrani > 0.08
+            ? `0 0 ${Math.round(8 + gazOrani * 28)}px rgba(${Math.round(111 + gazOrani * 115)}, ${Math.round(66 - gazOrani * 20)}, ${Math.round(193 - gazOrani * 130)}, ${(0.3 + gazOrani * 0.65).toFixed(2)})`
+            : 'none';
+
+        socket.emit('gazData', { value: netPpm });
+    }
+
+    timer = setInterval(gazOlc, gecikmeMs);
+    ayarlariGetir();
+    setInterval(ayarlariGetir, 3000);
+</script>
+</body>
+</html>

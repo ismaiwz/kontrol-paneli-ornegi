@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Işık Sensörü Simülasyonu</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            overflow: hidden;
+        }
+        .box {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            top: 50%;
+            transform: translateY(-50%);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: box-shadow 0.15s ease;
+        }
+        .h-100 {
+            height: 100vh !important;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .light-aura {
+            position: absolute;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 224, 0.45) 0%, rgba(255, 243, 205, 0.1) 50%, transparent 72%);
+            pointer-events: none;
+            animation: lightShimmer 2.8s ease-in-out infinite;
+        }
+        @keyframes lightShimmer {
+            0%, 100% {
+                transform: scale(0.97);
+                opacity: 0.88;
+            }
+            50% {
+                transform: scale(1.04);
+                opacity: 1;
+            }
+        }
+        .telemetry-panel {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(33, 37, 41, 0.9);
+            border: 1px solid #495057;
+            color: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            z-index: 2000;
+            min-width: 240px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="telemetry-panel">
+    <div>SOCKET: <span id="ws-status" class="text-danger">BAGLI DEGIL</span></div>
+    <div>GECIKME: <span id="delay-val" class="text-light">100</span> ms</div>
+    <div>ISIK: <span id="lux-val">120</span> lux</div>
+</div>
+
+<div class="container-fluid w-100 p-0 h-100">
+    <div class="row p-0 m-0 h-100">
+        <div class="col-2 ms-0 ps-0">
+            <div class="box bg-secondary text-white fw-bold" id="sensor">
+                <span>isik sensoru</span>
+            </div>
+        </div>
+        <div class="col-10">
+            <div class="box bg-light draggable cursor-pointer text-dark fw-bold">
+                <div class="light-aura"></div>
+                <span>isik kaynagi</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.8.4/socket.io.min.js"></script>
+<script>
+    const draggable = document.querySelector('.draggable');
+    const sensor = document.getElementById('sensor');
+    const wsStatusEl = document.getElementById('ws-status');
+    const delayValEl = document.getElementById('delay-val');
+    const luxValEl = document.getElementById('lux-val');
+
+    const socket = io();
+    let gecikmeMs = 100; // default gecikme süresi
+    let ustLimit = 1023; // default ust limit
+    let timer = null;
+
+    async function ayarlariGetir() {
+        try {
+            const res = await fetch('/getSettingsData', { method: 'POST' });
+            const data = await res.json();
+            if (data && data.isik) {
+                if (data.isik.max > 0) ustLimit = Math.max(1023, Number(data.isik.max) * 1.2);
+                const yeniMs = Number(data.isik.ms);
+                if (yeniMs > 0 && yeniMs !== gecikmeMs) {
+                    gecikmeMs = yeniMs;
+                    delayValEl.textContent = gecikmeMs;
+                    clearInterval(timer);
+                    timer = setInterval(isikOlc, gecikmeMs);
+                }
+            }
+        } catch (e) {}
+    }
+
+    socket.on('connect', () => {
+        wsStatusEl.textContent = 'BAGLANDI';
+        wsStatusEl.className = 'text-success';
+    });
+
+    socket.on('disconnect', () => {
+        wsStatusEl.textContent = 'KOPTU';
+        wsStatusEl.className = 'text-danger';
+    });
+    // drag fonskiyonları
+
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    draggable.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        const rect = draggable.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        draggable.style.position = 'absolute';
+        draggable.style.left = rect.left + 'px';
+        draggable.style.top = rect.top + 'px';
+        draggable.style.transform = 'none';
+        draggable.style.zIndex = '1000';
+        draggable.setPointerCapture(e.pointerId);
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const rect = draggable.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+        draggable.style.left = Math.min(Math.max(0, e.clientX - offsetX), maxLeft) + 'px';
+        draggable.style.top = Math.min(Math.max(0, e.clientY - offsetY), maxTop) + 'px';
+    });
+
+    document.addEventListener('pointerup', () => isDragging = false);
+    document.addEventListener('pointercancel', () => isDragging = false);
+
+    const ortamIsigi = 50; // ayarlanabilir ortam isigi
+
+    function isikOlc() {
+        const sRect = sensor.getBoundingClientRect();
+        const lRect = draggable.getBoundingClientRect();
+
+        const dx = (lRect.left + lRect.width / 2) - (sRect.left + sRect.width / 2);
+        const dy = (lRect.top + lRect.height / 2) - (sRect.top + sRect.height / 2);
+        const mesafe = Math.hypot(dx, dy);
+
+        const efektifMesafe = Math.max(0, mesafe - 40);
+        const siddet = 1 / (1 + Math.pow(efektifMesafe / 160, 2));
+        const lux = Math.max(0, Math.round(ortamIsigi + (siddet * (ustLimit - ortamIsigi)) + (Math.random() - 0.5) * 6));
+
+        luxValEl.textContent = lux;
+
+        const isikOrani = Math.min(1, Math.max(0, (lux - ortamIsigi) / (ustLimit - ortamIsigi)));
+        sensor.style.boxShadow = isikOrani > 0.05
+            ? `0 0 ${Math.round(8 + isikOrani * 30)}px rgba(255, 248, 200, ${(0.2 + isikOrani * 0.7).toFixed(2)})`
+            : 'none';
+
+        socket.emit('isikData', { value: lux });
+    }
+
+    timer = setInterval(isikOlc, gecikmeMs);
+    ayarlariGetir();
+    setInterval(ayarlariGetir, 3000);
+</script>
+</body>
+</html>

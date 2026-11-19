@@ -1,0 +1,32 @@
+{
+  "gas": {
+    "min": 0,
+    "max": 300,
+    "ms": 20
+  },
+  "vibration": {
+    "min": 0,
+    "max": 20,
+    "ms": 20
+  },
+  "light": {
+    "min": 70,
+    "max": 10000,
+    "ms": 20
+  },
+  "ultrasonik": {
+    "min": 0,
+    "max": 40,
+    "ms": 20
+  },
+  "temp": {
+    "min": 0,
+    "max": 200,
+    "ms": 20
+  },
+  "humidity": {
+    "min": 50,
+    "max": 70,
+    "ms": 20
+  }
+}
